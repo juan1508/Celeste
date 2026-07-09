@@ -10,17 +10,18 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from assets import ASSET_CATEGORIES, CRYPTO, FOREX_PAIRS, INDICES, STOCKS
 from backtest import compute_metrics, simulate_trades
 from data_utils import download_data
 from features import add_features, add_targets
 from models import generate_walk_forward_splits, get_models, train_and_evaluate
 
-st.set_page_config(page_title="EUR/USD ML Trading Lab", layout="wide", page_icon="📈")
+st.set_page_config(page_title="Multi-Asset ML Trading Lab", layout="wide", page_icon="📈")
 
-st.title("📈 EUR/USD ML Trading Lab")
+st.title("📈 Multi-Asset ML Trading Lab")
 st.caption(
-    "Walk-Forward Validation + Clasificación + Backtesting con costos reales. "
-    "Proyecto experimental — no es una recomendación de inversión."
+    "Forex, acciones, índices y cripto. Walk-Forward Validation + Clasificación + "
+    "Backtesting con costos reales. Proyecto experimental — no es una recomendación de inversión."
 )
 
 # ---------------------------------------------------------------------------
@@ -29,7 +30,27 @@ st.caption(
 with st.sidebar:
     st.header("⚙️ Configuración")
 
-    ticker = st.text_input("Ticker (Yahoo Finance)", "EURUSD=X")
+    st.subheader("Activo")
+    asset_category = st.selectbox("Categoría", ASSET_CATEGORIES)
+
+    pip_value = None  # solo aplica a forex
+    if asset_category == "Forex":
+        label = st.selectbox("Par de divisas", list(FOREX_PAIRS.keys()))
+        ticker, pip_value = FOREX_PAIRS[label]
+    elif asset_category == "Acciones":
+        label = st.selectbox("Acción", list(STOCKS.keys()))
+        ticker = STOCKS[label]
+    elif asset_category == "Índices":
+        label = st.selectbox("Índice", list(INDICES.keys()))
+        ticker = INDICES[label]
+    elif asset_category == "Cripto":
+        label = st.selectbox("Cripto", list(CRYPTO.keys()))
+        ticker = CRYPTO[label]
+    else:
+        ticker = st.text_input("Ticker de Yahoo Finance (ej. SPY, BTC-USD, EURUSD=X)", "AAPL")
+
+    st.caption(f"Ticker seleccionado: `{ticker}`")
+
     start_date = st.date_input("Fecha inicio de datos", pd.to_datetime("2015-01-01"))
 
     st.subheader("Target de clasificación")
@@ -44,8 +65,18 @@ with st.sidebar:
     st.subheader("Backtesting")
     threshold_up = st.slider("Prob. mínima para COMPRAR", 0.50, 0.90, 0.55, 0.01)
     threshold_down = st.slider("Prob. máxima para VENDER", 0.10, 0.50, 0.45, 0.01)
-    spread_pips = st.number_input("Spread (pips)", 0.0, 10.0, 1.0)
-    slippage_pips = st.number_input("Slippage (pips)", 0.0, 10.0, 0.5)
+
+    if asset_category == "Forex":
+        spread_pips = st.number_input("Spread (pips)", 0.0, 10.0, 1.0)
+        slippage_pips = st.number_input("Slippage (pips)", 0.0, 10.0, 0.5)
+        cost_per_unit = (spread_pips + slippage_pips) * pip_value
+    else:
+        spread_slippage_units = st.number_input(
+            "Spread + slippage estimados (en unidades de precio, ej. $ por acción/token)",
+            0.0, 1000.0, 0.02, step=0.01,
+        )
+        cost_per_unit = spread_slippage_units
+
     commission_pct = st.number_input("Comisión por operación (%)", 0.0, 1.0, 0.0, 0.01) / 100
 
     run_button = st.button("🚀 Ejecutar pipeline completo", type="primary", use_container_width=True)
@@ -178,8 +209,7 @@ with tab_backtest:
             val_df,
             threshold_up=threshold_up,
             threshold_down=threshold_down,
-            spread_pips=spread_pips,
-            slippage_pips=slippage_pips,
+            cost_per_unit=cost_per_unit,
             commission_pct=commission_pct,
         )
         metrics = compute_metrics(bt_df)
