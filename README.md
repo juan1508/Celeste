@@ -1,8 +1,19 @@
-# 📈 EUR/USD ML Trading Lab
+# 📈 Multi-Asset ML Trading Lab
 
 App en Streamlit para experimentar con **clasificación de dirección de precio** (sube/baja) sobre
-EUR/USD (o cualquier ticker de Yahoo Finance), usando **Walk-Forward Validation**, comparación de
-varios modelos y **backtesting con costos reales** (spread, slippage, comisión).
+**forex, acciones, índices o cripto** (cualquier ticker de Yahoo Finance), usando
+**Walk-Forward Validation**, comparación de varios modelos y **backtesting con costos reales**
+(spread, slippage, comisión).
+
+Desde la barra lateral puedes elegir la categoría de activo:
+- **Forex**: EUR/USD, GBP/USD, USD/JPY, USD/COP, etc. (costo modelado en pips).
+- **Acciones**: AAPL, MSFT, NVDA, Ecopetrol/Bancolombia ADRs, etc.
+- **Índices**: S&P 500, Nasdaq 100, Dow Jones, proxy COLCAP.
+- **Cripto**: BTC-USD, ETH-USD.
+- **Personalizado**: cualquier ticker válido de Yahoo Finance.
+
+Para acciones/índices/cripto el costo de transacción se modela en unidades de precio
+(ej. USD por acción) en vez de pips, ya que el concepto de "pip" es específico de forex.
 
 > ⚠️ Proyecto educativo/experimental. No es asesoría financiera ni una garantía de rentabilidad.
 
@@ -11,6 +22,7 @@ varios modelos y **backtesting con costos reales** (spread, slippage, comisión)
 ```
 eurusd-trading-app/
 ├── app.py            # App de Streamlit (UI)
+├── assets.py           # Catálogo de tickers (forex, acciones, índices, cripto)
 ├── data_utils.py      # Descarga de datos (Yahoo Finance)
 ├── features.py        # Ingeniería de variables + target de clasificación
 ├── models.py           # Modelos + generación de splits Walk-Forward
