@@ -11,14 +11,17 @@ def simulate_trades(
     prob_col="prob_up",
     threshold_up=0.55,
     threshold_down=0.45,
-    spread_pips=1.0,
-    slippage_pips=0.5,
+    cost_per_unit=0.00015,
     commission_pct=0.0,
-    pip_value=0.0001,
     position_size=1.0,
 ):
+    """
+    cost_per_unit: costo de spread + slippage expresado en las mismas unidades que el
+    precio (ej. para forex: (spread_pips + slippage_pips) * pip_value; para acciones:
+    spread + slippage estimados en $ por acción). Se descuenta como % del precio de cierre.
+    commission_pct: comisión por operación como fracción del valor operado (ej. 0.001 = 0.1%).
+    """
     df = df.copy()
-    cost_pips = (spread_pips + slippage_pips) * pip_value
 
     df["signal"] = 0
     df.loc[df[prob_col] >= threshold_up, "signal"] = 1     # compra
@@ -27,7 +30,7 @@ def simulate_trades(
     df["strategy_return"] = df["signal"] * df["future_return"] * position_size
 
     trade_mask = df["signal"] != 0
-    df.loc[trade_mask, "strategy_return"] -= cost_pips / df.loc[trade_mask, "close"]
+    df.loc[trade_mask, "strategy_return"] -= cost_per_unit / df.loc[trade_mask, "close"]
     df.loc[trade_mask, "strategy_return"] -= commission_pct
 
     df["equity_curve"] = (1 + df["strategy_return"].fillna(0)).cumprod()
